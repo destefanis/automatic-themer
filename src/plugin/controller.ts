@@ -1,47 +1,130 @@
-figma.showUI(__html__);
+// Plugin window dimensions
+figma.showUI(__html__, { width: 320, height: 368 });
 
+// Imported themes
 import { darkTheme } from "./dark-theme";
 
+// Utility function for serializing nodes to pass back to the UI.
+function serializeNodes(nodes) {
+  let serializedNodes = JSON.stringify(nodes, [
+    "name",
+    "type",
+    "children",
+    "id"
+  ]);
+
+  return serializedNodes;
+}
+
+// Utility function for flattening the
+// selection of nodes in Figma into an array.
+const flatten = obj => {
+  const array = Array.isArray(obj) ? obj : [obj];
+  return array.reduce((acc, value) => {
+    acc.push(value);
+    if (value.children) {
+      acc = acc.concat(flatten(value.children));
+      delete value.children;
+    }
+    return acc;
+  }, []);
+};
+
 figma.ui.onmessage = msg => {
+  let skippedLayers = [];
+
+  // When the app is run
   if (msg.type === "run-app") {
-    const nodes = [];
-    console.log(msg.message);
-
-    // This is how figma responds back to the ui
-    figma.ui.postMessage({
-      type: "theme-selected",
-      message: `Dark Theme Applied`
-    });
-
-    // If nothing is selected update the whole page
+    // If nothing's selected, we tell the UI to keep the empty state.
     if (figma.currentPage.selection.length === 0) {
-      const frameNodes = figma.currentPage.children;
-      const allNodes = figma.currentPage.findAll();
-      allNodes.map(selected => updateTheme(selected));
-    } else if (figma.currentPage.selection.length === 1) {
-      // Find all the nodes
-      let allNodes = figma.currentPage.selection[0].findAll();
-      allNodes.unshift(figma.currentPage.selection[0]);
-      // Update the nodes
-      allNodes.map(selected => updateTheme(selected));
+      figma.ui.postMessage({
+        type: "selection-updated",
+        message: 0
+      });
     } else {
-      let allNodes = [];
-      let nodeLength = figma.currentPage.selection.length;
+      let selectedNodes = flatten(figma.currentPage.selection);
 
-      // Find all the children nodes from the selected layers
-      for (let i = 0; i < nodeLength; i++) {
-        allNodes.push(figma.currentPage.selection[i].findAll());
-      }
-
-      allNodes.forEach(function(selectedNode) {
-        selectedNode.map(selected => updateTheme(selected));
+      // Update the UI with the number of selected nodes.
+      // This will display our themeing controls.
+      figma.ui.postMessage({
+        type: "selection-updated",
+        message: serializeNodes(selectedNodes)
       });
     }
   }
 
+  if (msg.type === "theme-update") {
+    let nodesToTheme = flatten(figma.currentPage.selection);
+
+    if (msg.message === "light-theme") {
+      // Update the layers with this theme.
+      nodesToTheme.map(selected => updateTheme(selected));
+    }
+
+    // Need to wait for some promises to resolve before
+    // sending the skipped layers back to the UI.
+    setTimeout(function() {
+      figma.ui.postMessage({
+        type: "layers-skipped",
+        message: serializeNodes(skippedLayers)
+      });
+    }, 500);
+
+    figma.notify(`Themeing complete`, { timeout: 750 });
+  }
+
+  if (msg.type === "select-layer") {
+    let layer = figma.getNodeById(msg.id);
+    let layerArray = [];
+
+    // Using selection and viewport requires an array.
+    layerArray.push(layer);
+
+    // Moves the layer into focus and selects so the user can update it.
+    figma.notify(`Layer ${layer.name} selected`, { timeout: 750 });
+    figma.currentPage.selection = layerArray;
+    figma.viewport.scrollAndZoomIntoView(layerArray);
+  }
+
+  // Swap styles with the corresponding/mapped styles
+  async function replaceStyles(
+    node,
+    style,
+    mappings,
+    applyStyle: (node, styleId) => void
+  ) {
+    // Find the style the ID corresponds to in the team library
+    let importedStyle = await figma.importStyleByKeyAsync(style.key);
+
+    // Once the promise is resolved, then see if the
+    // key matches anything in the mappings object.
+    if (mappings[importedStyle.key] !== undefined) {
+      let mappingStyle = mappings[importedStyle.key];
+
+      // Use the mapping value to fetch the official style.
+      let newStyle = await figma.importStyleByKeyAsync(mappingStyle.mapsToKey);
+
+      // Update the node with the new color.
+      applyStyle(node, newStyle.id);
+    } else {
+      skippedLayers.push(node);
+    }
+  }
+
+  async function replaceFills(node, style, mappings) {
+    await replaceStyles(
+      node,
+      style,
+      mappings,
+      (node, styleId) => (node.fillStyleId = styleId)
+    );
+  }
+
   function updateTheme(node) {
+    console.log(node);
     switch (node.type) {
       case "COMPONENT":
+      case "GROUP":
       case "INSTANCE":
       case "RECTANGLE":
       case "ELLIPSE":
@@ -51,24 +134,24 @@ figma.ui.onmessage = msg => {
       case "BOOLEAN_OPERATION":
       case "FRAME":
       case "VECTOR": {
-        // Check to see if the node has a style
-        if (node.fillStyleId) {
-          // Fetch the style by using the ID.
-          let style = figma.getStyleById(node.fillStyleId);
-          // Pass in the layer we want to change, the style the node has
-          // and the set of mappings we want to check against.
-          replaceStyles(node, style, darkTheme);
-        } else if (node.backgroundStyleId) {
-          // Some elements have backgrounds instead of fills.
-          let style = figma.getStyleById(node.backgroundStyleId);
-          replaceBackground(node, style, darkTheme);
+        if (node.fills) {
+          if (node.fillStyleId && typeof node.fillStyleId !== "symbol") {
+            let style = figma.getStyleById(node.fillStyleId);
+            // Pass in the layer we want to change, the style ID the node is using.
+            // and the set of mappings we want to check against.
+            replaceFills(node, style, darkTheme);
+          } else {
+            skippedLayers.push(node);
+          }
         }
+
         break;
       }
       case "TEXT": {
-        if (node.fillStyleId) {
-          let style = figma.getStyleById(node.fillStyleId);
-          replaceStyles(node, style, darkTheme);
+        if (node.fillStyleId && typeof node.fillStyleId !== "symbol") {
+          replaceFills(node, figma.getStyleById(node.fillStyleId), darkTheme);
+        } else {
+          skippedLayers.push(node);
         }
       }
       default: {
@@ -76,46 +159,4 @@ figma.ui.onmessage = msg => {
       }
     }
   }
-
-  // Replaces fills with corresponding styles
-  function replaceStyles(node, style, mappings) {
-    // Find the style the ID corresponds to in the team library
-    let importedStyle = figma.importStyleByKeyAsync(style.key);
-
-    // Once the promise is resolved, then see if the
-    // key matches anything in the mappings object.
-    importedStyle.then(object => {
-      // If it's null, no mapping exists yet.
-      if (mappings[object.key] !== undefined) {
-        let mappingStyle = mappings[object.key];
-
-        // Use the mapping value to fetch the official style.
-        let newStyle = figma.importStyleByKeyAsync(mappingStyle.mapsToKey);
-
-        newStyle.then(function(object) {
-          // Update the current style with the mapping.
-          node.fillStyleId = object.id;
-        });
-      }
-    });
-  }
-
-  // Updates backgrounds with styles @todo combine this function with replaceStyles
-  function replaceBackground(node, style, mappings) {
-    let importedStyle = figma.importStyleByKeyAsync(style.key);
-
-    importedStyle.then(object => {
-      if (mappings[object.key] !== undefined) {
-        let mappingStyle = mappings[object.key];
-
-        let newStyle = figma.importStyleByKeyAsync(mappingStyle.mapsToKey);
-
-        newStyle.then(function(object) {
-          node.backgroundStyleId = object.id;
-        });
-      }
-    });
-  }
-
-  // figma.closePlugin();
 };
