@@ -112,6 +112,24 @@ figma.ui.onmessage = msg => {
     }
   }
 
+  async function replaceComponent(
+    node,
+    key,
+    applyComponent: (node, masterComponent) => void
+  ) {
+    let importedComponent = await figma.importComponentByKeyAsync(key);
+    // Update the node with the new color.
+    applyComponent(node, importedComponent);
+  }
+
+  async function swapComponent(node, key) {
+    await replaceComponent(
+      node,
+      key,
+      (node, masterComponent) => (node.masterComponent = masterComponent)
+    );
+  }
+
   async function replaceFills(node, style, mappings) {
     await replaceStyles(
       node,
@@ -139,10 +157,19 @@ figma.ui.onmessage = msg => {
     );
   }
 
+  // Locked layers + components to switch instances
   function updateTheme(node) {
     switch (node.type) {
+      case "INSTANCE": {
+        console.log(node);
+        if (
+          node.masterComponent.key ===
+          "f0d4aa5e63fff4392e3b3c22884523369f5d0424"
+        ) {
+          swapComponent(node, "33425bd93c1b8cea071df9b5297f0b19583a643b");
+        }
+      }
       case "COMPONENT":
-      case "INSTANCE":
       case "RECTANGLE":
       case "ELLIPSE":
       case "POLYGON":
