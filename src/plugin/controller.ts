@@ -1,5 +1,5 @@
 // Plugin window dimensions
-figma.showUI(__html__, { width: 320, height: 368 });
+figma.showUI(__html__, { width: 320, height: 358 });
 
 // Imported themes
 import { darkTheme } from "./dark-theme";
@@ -33,7 +33,6 @@ const flatten = obj => {
 figma.ui.onmessage = msg => {
   let skippedLayers = [];
 
-  // When the app is run
   if (msg.type === "run-app") {
     // If nothing's selected, we tell the UI to keep the empty state.
     if (figma.currentPage.selection.length === 0) {
@@ -45,7 +44,7 @@ figma.ui.onmessage = msg => {
       let selectedNodes = flatten(figma.currentPage.selection);
 
       // Update the UI with the number of selected nodes.
-      // This will display our themeing controls.
+      // This will display our theming controls.
       figma.ui.postMessage({
         type: "selection-updated",
         message: serializeNodes(selectedNodes)
@@ -53,6 +52,7 @@ figma.ui.onmessage = msg => {
     }
   }
 
+  // When a theme is selected
   if (msg.type === "theme-update") {
     let nodesToTheme = flatten(figma.currentPage.selection);
 
@@ -70,9 +70,10 @@ figma.ui.onmessage = msg => {
       });
     }, 500);
 
-    figma.notify(`Themeing complete`, { timeout: 750 });
+    figma.notify(`Theming complete`, { timeout: 750 });
   }
 
+  // When a layer is selected from the skipped layers.
   if (msg.type === "select-layer") {
     let layer = figma.getNodeById(msg.id);
     let layerArray = [];
@@ -120,11 +121,27 @@ figma.ui.onmessage = msg => {
     );
   }
 
+  async function replaceStrokes(node, style, mappings) {
+    await replaceStyles(
+      node,
+      style,
+      mappings,
+      (node, styleId) => (node.strokeStyleId = styleId)
+    );
+  }
+
+  async function replaceEffects(node, style, mappings) {
+    await replaceStyles(
+      node,
+      style,
+      mappings,
+      (node, styleId) => (node.effectStyleId = styleId)
+    );
+  }
+
   function updateTheme(node) {
-    console.log(node);
     switch (node.type) {
       case "COMPONENT":
-      case "GROUP":
       case "INSTANCE":
       case "RECTANGLE":
       case "ELLIPSE":
@@ -133,6 +150,7 @@ figma.ui.onmessage = msg => {
       case "LINE":
       case "BOOLEAN_OPERATION":
       case "FRAME":
+      case "LINE":
       case "VECTOR": {
         if (node.fills) {
           if (node.fillStyleId && typeof node.fillStyleId !== "symbol") {
@@ -143,6 +161,22 @@ figma.ui.onmessage = msg => {
           } else {
             skippedLayers.push(node);
           }
+        }
+
+        if (node.strokeStyleId) {
+          replaceStrokes(
+            node,
+            figma.getStyleById(node.strokeStyleId),
+            darkTheme
+          );
+        }
+
+        if (node.effectStyleId) {
+          replaceEffects(
+            node,
+            figma.getStyleById(node.effectStyleId),
+            darkTheme
+          );
         }
 
         break;

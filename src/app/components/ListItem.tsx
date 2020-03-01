@@ -22,7 +22,9 @@ function ListItem(props) {
         <span className="list-icon">
           <img src={require("../assets/" + node.type.toLowerCase() + ".svg")} />
         </span>
-        <span className="list-name">{node.name}</span>
+        <span className="list-name type type--pos-small-normal">
+          {node.name}
+        </span>
       </div>
     </li>
   );

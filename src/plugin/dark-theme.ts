@@ -93,6 +93,17 @@ const darkTheme = {
     name: "Dark / Background Mod / Accent",
     mapsToName: "Light / Background Mod / Accent",
     mapsToKey: "08c7091f8d6950dc3f616afe8ed45b086f9124c7"
+  },
+  // Effects
+  b7edafef4513a59a40c8ba7adb382a0b6d3313ff: {
+    name: "Border Elevation / Dark",
+    mapsToName: "Border Elevation / Light",
+    mapsToKey: "bf64ca51f902a903935680f692618a5eba4ea894"
+  },
+  "67aabb2beb8092e4c0094e0175657bb0758e6ba8": {
+    name: "High Elevation / Dark",
+    mapsToName: "High Elevation / Light",
+    mapsToKey: "30f011bbe03506a59052d7f8435cc1ec3b743b19"
   }
 };
 

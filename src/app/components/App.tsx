@@ -103,7 +103,10 @@ const App = ({}) => {
                 activeTab === "layers" ? "active" : "disabled"
               }`}
             >
-              Layers
+              Skipped Layers{" "}
+              {skippedLayers.length !== 0 ? (
+                <span className="layer-count"> ({skippedLayers.length})</span>
+              ) : null}
             </div>
           </nav>
           {activeTab === "themes" ? (
@@ -117,12 +120,16 @@ const App = ({}) => {
               >
                 Light Theme
               </button>
-              <button className="button button--primary">Dark Theme</button>
+              <button className="button button--secondary">Dark Theme</button>
             </div>
           ) : (
             <div className="layer-list-wrapper">
               {skippedLayers.length === 0 ? (
-                <div className="">No layers have been skipped yet.</div>
+                <div className="active-state">
+                  <h3 className="active-state-title layer-empty-title type type--pos-large-medium">
+                    No layers have been skipped yet.
+                  </h3>
+                </div>
               ) : (
                 <ul className="list">{listItems}</ul>
               )}

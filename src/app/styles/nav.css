@@ -112,3 +112,8 @@
   text-overflow: ellipsis;
   margin-right: 48px;
 }
+
+.layer-count {
+  padding-left: 2px;
+  /* color: #b3b3b3; */
+}

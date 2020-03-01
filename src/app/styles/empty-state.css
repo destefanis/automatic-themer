@@ -20,6 +20,10 @@
   margin-bottom: 16px;
 }
 
+.layer-empty-title {
+  padding: 130px 0;
+}
+
 .empty-state-wrapper {
   margin: 16px;
 }
