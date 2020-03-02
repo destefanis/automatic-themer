@@ -1,4 +1,4 @@
-# Auto THeme
+# Auto Theme
 
 A figma plugin for automatically theming your designs from one color mapping to another. This was built specifically for use by the Discord design team.
 
