@@ -21,7 +21,7 @@ const App = ({}) => {
   }, []);
 
   const themeToLight = React.useCallback(() => {
-    const message = "light-theme";
+    const message = "dark-to-light-theme";
     parent.postMessage(
       { pluginMessage: { type: "theme-update", message } },
       "*"

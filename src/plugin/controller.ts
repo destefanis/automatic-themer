@@ -54,11 +54,12 @@ figma.ui.onmessage = msg => {
 
   // When a theme is selected
   if (msg.type === "theme-update") {
-    let nodesToTheme = flatten(figma.currentPage.selection);
+    const nodesToTheme = figma.currentPage.selection;
 
-    if (msg.message === "light-theme") {
-      // Update the layers with this theme.
-      nodesToTheme.map(selected => updateTheme(selected));
+    if (msg.message === "dark-to-light-theme") {
+      // Update the layers with this theme, by passing in the
+      // selected nodes and the theme object.
+      nodesToTheme.map(selected => updateTheme(selected, darkTheme));
     }
 
     // Need to wait for some promises to resolve before
@@ -115,17 +116,22 @@ figma.ui.onmessage = msg => {
   async function replaceComponent(
     node,
     key,
+    mappings,
     applyComponent: (node, masterComponent) => void
   ) {
-    let importedComponent = await figma.importComponentByKeyAsync(key);
-    // Update the node with the new color.
+    let componentToSwitchWith = mappings[key];
+    let importedComponent = await figma.importComponentByKeyAsync(
+      componentToSwitchWith.mapsToKey
+    );
+    // Switch the existing component to a new component.
     applyComponent(node, importedComponent);
   }
 
-  async function swapComponent(node, key) {
+  async function swapComponent(node, key, mappings) {
     await replaceComponent(
       node,
       key,
+      mappings,
       (node, masterComponent) => (node.masterComponent = masterComponent)
     );
   }
@@ -157,18 +163,10 @@ figma.ui.onmessage = msg => {
     );
   }
 
-  // Locked layers + components to switch instances
-  function updateTheme(node) {
+  // Updates the node with the new theme depending on
+  // the type of the node.
+  function updateTheme(node, theme) {
     switch (node.type) {
-      case "INSTANCE": {
-        console.log(node);
-        if (
-          node.masterComponent.key ===
-          "f0d4aa5e63fff4392e3b3c22884523369f5d0424"
-        ) {
-          swapComponent(node, "33425bd93c1b8cea071df9b5297f0b19583a643b");
-        }
-      }
       case "COMPONENT":
       case "RECTANGLE":
       case "ELLIPSE":
@@ -179,38 +177,50 @@ figma.ui.onmessage = msg => {
       case "FRAME":
       case "LINE":
       case "VECTOR": {
+        if (node.children) {
+          node.children.forEach(child => {
+            updateTheme(child, theme);
+          });
+        }
         if (node.fills) {
           if (node.fillStyleId && typeof node.fillStyleId !== "symbol") {
             let style = figma.getStyleById(node.fillStyleId);
             // Pass in the layer we want to change, the style ID the node is using.
             // and the set of mappings we want to check against.
-            replaceFills(node, style, darkTheme);
+            replaceFills(node, style, theme);
           } else {
             skippedLayers.push(node);
           }
         }
 
         if (node.strokeStyleId) {
-          replaceStrokes(
-            node,
-            figma.getStyleById(node.strokeStyleId),
-            darkTheme
-          );
+          replaceStrokes(node, figma.getStyleById(node.strokeStyleId), theme);
         }
 
         if (node.effectStyleId) {
-          replaceEffects(
-            node,
-            figma.getStyleById(node.effectStyleId),
-            darkTheme
-          );
+          replaceEffects(node, figma.getStyleById(node.effectStyleId), theme);
         }
 
         break;
       }
+      case "INSTANCE": {
+        let componentKey = node.masterComponent.key;
+        // If instance is in mapping, then call it and skip it's children
+        // otherwise check for the normal differences.
+        if (theme[componentKey] !== undefined) {
+          swapComponent(node, componentKey, theme);
+        } else {
+          if (node.children) {
+            node.children.forEach(child => {
+              updateTheme(child, theme);
+            });
+          }
+        }
+        break;
+      }
       case "TEXT": {
         if (node.fillStyleId && typeof node.fillStyleId !== "symbol") {
-          replaceFills(node, figma.getStyleById(node.fillStyleId), darkTheme);
+          replaceFills(node, figma.getStyleById(node.fillStyleId), theme);
         } else {
           skippedLayers.push(node);
         }

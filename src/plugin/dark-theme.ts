@@ -1,4 +1,31 @@
 const darkTheme = {
+  // Components (swaps instances rather ie Name / Dark to Name / Light)
+  f0d4aa5e63fff4392e3b3c22884523369f5d0424: {
+    componentName: "iPhone X Status Bar / Dark",
+    mapsToKey: "33425bd93c1b8cea071df9b5297f0b19583a643b"
+  },
+  "5b8dce7a790466da546d319a69f5de220e1a66f1": {
+    componentName: "iPhone X Home Indicator / Dark",
+    mapsToKey: "0489bde7fd0346a97eff3170167714838a8ffb9c"
+  },
+  "46d6bed4edd9482b1452afab5ab0292b516c9e09": {
+    componentName: "Navigation Tab / Dark",
+    mapsToKey: "64d16554561a7496b2d23854074ce923655918e0"
+  },
+  // Android System Components
+  "3588fe4d5a302b2fca2be2b0cb5c12e2a2f41c05": {
+    componentName: "Status Bar / Dark",
+    mapsToKey: "790d7d3d884a6d3dadc79bf3c48a4918f4c16ba7"
+  },
+  "43c14ca23834d2aa3bf1e027a0635c7393e87378": {
+    componentName: "Navigation Tab / Dark",
+    mapsToKey: "bd56c3e89162d8274c4ca591f2ca1e1064658570"
+  },
+  // Desktop Components
+  d31d651767116b73f9209c5362669782ff3a8a25: {
+    componentName: "Windows Bar / Dark",
+    mapsToKey: "05fc2a6b4207baa8f672dc9e8a5d750c5d60711b"
+  },
   // Headings
   "5c1691cbeaaf4270107d34f1a12f02fdd04afa02": {
     name: "Dark / Header / Primary (White)",
