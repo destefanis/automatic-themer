@@ -20,8 +20,20 @@ const App = ({}) => {
     parent.postMessage({ pluginMessage: { type: "run-app", message } }, "*");
   }, []);
 
+  // This tells the controller.ts file to theme
+  // our selection from dark to light.
   const themeToLight = React.useCallback(() => {
     const message = "dark-to-light-theme";
+    parent.postMessage(
+      { pluginMessage: { type: "theme-update", message } },
+      "*"
+    );
+  }, []);
+
+  // This tells the controller.ts file to theme
+  // our selection from light to dark.
+  const themeToDark = React.useCallback(() => {
+    const message = "light-to-dark-theme";
     parent.postMessage(
       { pluginMessage: { type: "theme-update", message } },
       "*"
@@ -36,6 +48,7 @@ const App = ({}) => {
     setActiveTab("layers");
   }
 
+  // When the user selects a layer in the skipped layer list.
   const handleLayerSelect = id => {
     setActiveLayer(id);
     parent.postMessage(
@@ -120,7 +133,12 @@ const App = ({}) => {
               >
                 Light Theme
               </button>
-              <button className="button button--secondary">Dark Theme</button>
+              <button
+                className="button button--secondary"
+                onClick={themeToDark}
+              >
+                Dark Theme
+              </button>
             </div>
           ) : (
             <div className="layer-list-wrapper">

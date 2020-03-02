@@ -3,6 +3,7 @@ figma.showUI(__html__, { width: 320, height: 358 });
 
 // Imported themes
 import { darkTheme } from "./dark-theme";
+import { lightTheme } from "./light-theme";
 
 // Utility function for serializing nodes to pass back to the UI.
 function serializeNodes(nodes) {
@@ -60,6 +61,12 @@ figma.ui.onmessage = msg => {
       // Update the layers with this theme, by passing in the
       // selected nodes and the theme object.
       nodesToTheme.map(selected => updateTheme(selected, darkTheme));
+    }
+
+    if (msg.message === "light-to-dark-theme") {
+      // Update the layers with this theme, by passing in the
+      // selected nodes and the theme object.
+      nodesToTheme.map(selected => updateTheme(selected, lightTheme));
     }
 
     // Need to wait for some promises to resolve before
@@ -205,7 +212,7 @@ figma.ui.onmessage = msg => {
       }
       case "INSTANCE": {
         let componentKey = node.masterComponent.key;
-        // If instance is in mapping, then call it and skip it's children
+        // If this instance is in mapping, then call it and skip it's children
         // otherwise check for the normal differences.
         if (theme[componentKey] !== undefined) {
           swapComponent(node, componentKey, theme);

@@ -85,6 +85,11 @@ const darkTheme = {
     mapsToName: "Light / Background / Secondary (130)",
     mapsToKey: "83704278c845a6a7ceb1f837387972ccb6d41960"
   },
+  abf9ad88ae1ade1a4b945b012f0965c9cdc068c9: {
+    name: "Dark / Background / Secondary Alternate",
+    mapsToName: "Light / Background / Secondary Alternate",
+    mapsToKey: "6acd84c794796d112d4e9d22c4c8a5cae940a61d"
+  },
   ef179b6abe6cb8779857e05a6333d33f7a2b9320: {
     name: "Dark / Background / Tertiary (700)",
     mapsToName: "Light / Background / Tertiary (200)",
